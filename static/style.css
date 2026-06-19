@@ -144,6 +144,7 @@ header {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
+    animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .card::before {
@@ -574,4 +575,60 @@ footer a:hover {
         justify-content: center;
     }
 }
+
+/* Premium Animations & Micro-interactions */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Stagger card load animations */
+.left-col .card:nth-child(1) { animation-delay: 0.05s; }
+.left-col .card:nth-child(2) { animation-delay: 0.15s; }
+.right-col .card:nth-child(1) { animation-delay: 0.2s; }
+.right-col .card:nth-child(2) { animation-delay: 0.3s; }
+.admin-grid .card:nth-child(1) { animation-delay: 0.1s; }
+.admin-grid .card:nth-child(2) { animation-delay: 0.2s; }
+
+/* Micro-animations for logo spin/tilt on hover */
+.logo-icon i {
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.logo-section:hover .logo-icon i {
+    transform: rotate(15deg) scale(1.2);
+}
+
+/* Micro-animations for stats items */
+.stats-grid .stat-item {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+}
+.stats-grid .stat-item:hover {
+    transform: translateY(-3px) scale(1.01);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Inputs and Forms Smooth Focus Transition */
+input, textarea, select {
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease !important;
+}
+input:focus, textarea:focus, select:focus {
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 3px var(--color-primary-glow) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Table rows smooth hover transition */
+tr {
+    transition: background-color 0.15s ease;
+}
+tr:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
 
