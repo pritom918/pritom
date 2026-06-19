@@ -2,10 +2,10 @@ package com.instaoff.app
 
 import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
-import android.view.animation.DecelerateInterpolator
-import android.widget.ImageView
 import android.widget.RelativeLayout
+import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
 
 class SplashActivity : AppCompatActivity() {
@@ -13,53 +13,59 @@ class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Premium dark background color matching the web app theme
-        val darkBackgroundColor = Color.parseColor("#0F172A") 
-
-        // Create main splash container programmatically
+        // Seamless black background matching the video splash
         val rootLayout = RelativeLayout(this).apply {
-            setBackgroundColor(darkBackgroundColor)
+            setBackgroundColor(Color.BLACK)
             layoutParams = RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.MATCH_PARENT,
                 RelativeLayout.LayoutParams.MATCH_PARENT
             )
         }
 
-        // Create PTM Logo ImageView
-        val logoSize = (280 * resources.displayMetrics.density).toInt()
-        val logoView = ImageView(this).apply {
-            setImageResource(R.drawable.app_logo)
-            scaleType = ImageView.ScaleType.FIT_CENTER
-            layoutParams = RelativeLayout.LayoutParams(logoSize, logoSize).apply {
+        val videoView = VideoView(this).apply {
+            val params = RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.MATCH_PARENT,
+                RelativeLayout.LayoutParams.MATCH_PARENT
+            ).apply {
                 addRule(RelativeLayout.CENTER_IN_PARENT)
             }
-            
-            // Set initial state for animation
-            alpha = 0f
-            scaleX = 0.75f
-            scaleY = 0.75f
+            layoutParams = params
         }
 
-        rootLayout.addView(logoView)
+        rootLayout.addView(videoView)
         setContentView(rootLayout)
 
-        // Premium fade-in and scale-up micro-animation
-        logoView.animate()
-            .alpha(1f)
-            .scaleX(1f)
-            .scaleY(1f)
-            .setDuration(1200)
-            .setInterpolator(DecelerateInterpolator())
-            .withEndAction {
-                // Hold splash for 800ms, then launch MainActivity
-                logoView.postDelayed({
-                    val intent = Intent(this@SplashActivity, MainActivity::class.java)
-                    startActivity(intent)
-                    finish()
-                    // Apply smooth fade transition between activities
-                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-                }, 800)
+        try {
+            // Configure path to resource raw splash_video.mp4
+            val videoUri = Uri.parse("android.resource://$packageName/${R.raw.splash_video}")
+            videoView.setVideoURI(videoUri)
+
+            videoView.setOnPreparedListener { mp ->
+                // Adjust screen display scaling and play
+                mp.isLooping = false
+                videoView.start()
             }
-            .start()
+
+            // Move to MainActivity once video finishes playing
+            videoView.setOnCompletionListener {
+                navigateToHome()
+            }
+
+            // Error fallback: If video player encounters an issue, skip to Dashboard instantly
+            videoView.setOnErrorListener { _, _, _ ->
+                navigateToHome()
+                true
+            }
+        } catch (e: Exception) {
+            navigateToHome()
+        }
+    }
+
+    private fun navigateToHome() {
+        val intent = Intent(this@SplashActivity, MainActivity::class.java)
+        startActivity(intent)
+        finish()
+        // Smooth cross-fade transition
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
     }
 }
