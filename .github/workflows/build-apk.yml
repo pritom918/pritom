@@ -24,31 +24,27 @@ jobs:
 
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
-
-    - name: Generate Gradle Wrapper
-      run: |
-        cd instaoff-android
-        gradle wrapper
+      with:
+        gradle-version: '8.5'
 
     - name: Build Debug APK (Self-Signed, Immediately Installable)
       run: |
         cd instaoff-android
-        chmod +x gradlew
-        ./gradlew assembleDebug
+        gradle assembleDebug
 
     - name: Build Release APK (Unsigned)
       run: |
         cd instaoff-android
-        ./gradlew assembleRelease
+        gradle assembleRelease
 
     - name: Upload Debug APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: instaoff-debug-apk
+        name: ptm-debug-apk
         path: instaoff-android/app/build/outputs/apk/debug/app-debug.apk
 
     - name: Upload Release APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: instaoff-release-apk
+        name: ptm-release-apk
         path: instaoff-android/app/build/outputs/apk/release/app-release-unsigned.apk
