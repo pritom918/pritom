@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PTM App - Instagram Auto-Responder</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Google Sign-In Client SDK -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- FontAwesome for Premium Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -151,6 +153,31 @@
                         <i class="fas fa-arrow-right"></i>
                     </button>
                 </form>
+
+                <!-- Google Sign-In Option -->
+                <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 1.5rem 0; color: var(--text-muted); font-size: 0.85rem;">
+                    <div style="flex-grow: 1; height: 1px; background: var(--border-color);"></div>
+                    <span>or continue with</span>
+                    <div style="flex-grow: 1; height: 1px; background: var(--border-color);"></div>
+                </div>
+                <div style="display: flex; justify-content: center; margin-bottom: 0.5rem;">
+                    <div id="g_id_onload"
+                         data-client_id="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+                         data-context="signin"
+                         data-ux_mode="popup"
+                         data-callback="handleCredentialResponse"
+                         data-auto_prompt="false">
+                    </div>
+                    <div class="g_id_signin"
+                         data-type="standard"
+                         data-shape="rectangular"
+                         data-theme="filled_dark"
+                         data-text="signin_with"
+                         data-size="large"
+                         data-logo_alignment="left"
+                         data-width="280">
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -781,6 +808,28 @@
                 }
             } catch (err) {
                 console.error("Session check error:", err);
+            }
+        }
+
+        // Handle Google Sign-In Credential Callback
+        async function handleCredentialResponse(response) {
+            try {
+                const res = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ credential: response.credential })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast("Successfully logged in via Google!", "success");
+                    await checkSession();
+                } else {
+                    showToast(data.message || "Google login failed", "error");
+                }
+            } catch (err) {
+                showToast("Network error during Google Sign-In", "error");
             }
         }
 

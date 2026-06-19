@@ -98,6 +98,86 @@ def api_login_user():
         session['username'] = username
     return jsonify({"success": success, "message": msg})
 
+def decode_google_jwt(credential_token):
+    try:
+        import base64
+        import json
+        parts = credential_token.split('.')
+        if len(parts) != 3:
+            return None
+        payload_b64 = parts[1]
+        payload_b64 += '=' * (4 - len(payload_b64) % 4)
+        payload_bytes = base64.urlsafe_b64decode(payload_b64)
+        return json.loads(payload_bytes.decode('utf-8'))
+    except Exception as e:
+        app.logger.error(f"Failed to decode Google JWT: {e}")
+        return None
+
+@app.route('/api/auth/google', methods=['POST'])
+def api_auth_google():
+    data = request.json or {}
+    credential = data.get('credential')
+    if not credential:
+        return jsonify({"success": False, "message": "Credential token is required"}), 400
+        
+    payload_info = decode_google_jwt(credential)
+    if not payload_info:
+        return jsonify({"success": False, "message": "Invalid Google token"}), 400
+        
+    email = payload_info.get('email')
+    if not email:
+        return jsonify({"success": False, "message": "Email not found in Google profile"}), 400
+        
+    username = email.strip().lower()
+    
+    # Check if user already exists
+    conn = database.get_db_connection()
+    row = conn.execute('SELECT id, status FROM users WHERE username = ?', (username,)).fetchone()
+    
+    if row:
+        user_id = row['id']
+        status = row['status']
+        conn.close()
+        
+        if status == 0:
+            return jsonify({"success": False, "message": "Your account has been suspended by the administrator."}), 403
+    else:
+        # Create new user
+        import secrets
+        import datetime
+        from werkzeug.security import generate_password_hash
+        
+        rand_pw = secrets.token_hex(16)
+        pw_hash = generate_password_hash(rand_pw)
+        now_str = datetime.datetime.now().isoformat()
+        
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                'INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)',
+                (username, pw_hash, now_str)
+            )
+            user_id = cursor.lastrowid
+            conn.commit()
+            
+            # Automatically create their first settings slot
+            database.add_instagram_account(user_id)
+        except Exception as e:
+            conn.close()
+            return jsonify({"success": False, "message": f"Failed to register Google user: {str(e)}"}), 500
+        finally:
+            conn.close()
+            
+    session['user_id'] = user_id
+    session['username'] = username
+    session.permanent = True
+    
+    return jsonify({
+        "success": True,
+        "message": "Logged in successfully via Google.",
+        "username": username
+    })
+
 @app.route('/api/logout_user', methods=['POST'])
 def api_logout_user():
     session.clear()
