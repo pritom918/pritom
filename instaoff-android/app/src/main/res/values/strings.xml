@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">PTM App</string>
+    <!-- Change this default URL to your production domain (e.g., https://yourdomain.com) when hosting live. -->
+    <string name="default_web_url">http://151.243.146.42</string>
+</resources>

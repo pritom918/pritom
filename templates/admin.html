@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PTM App - Super Admin Console</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Dedicated styles for the Premium Admin Control Center */
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.3fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        @media (max-width: 1024px) {
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Stats Panel */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+        .stat-card:hover {
+            border-color: var(--border-highlight);
+            transform: translateY(-2px);
+        }
+        
+        .stat-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #fff;
+        }
+        .stat-blue {
+            background: linear-gradient(135deg, #00f2fe, #4facfe);
+            box-shadow: 0 4px 12px rgba(0, 242, 254, 0.2);
+        }
+        .stat-purple {
+            background: linear-gradient(135deg, var(--color-primary), #6d28d9);
+            box-shadow: 0 4px 12px var(--color-primary-glow);
+        }
+        .stat-green {
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+        
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+            line-height: 1.2;
+            color: #fff;
+        }
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        /* Tab Navigation inside User Manager */
+        .admin-tabs {
+            display: flex;
+            gap: 0.25rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            overflow-x: auto;
+        }
+        .admin-tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border-radius: 0.35rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+        .admin-tab-btn:hover {
+            background: rgba(255,255,255,0.03);
+            color: #fff;
+        }
+        .admin-tab-btn.active-tab {
+            background: rgba(138, 43, 226, 0.15);
+            color: var(--color-primary);
+            font-weight: 700;
+            border: 1px solid rgba(138, 43, 226, 0.3);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active-content {
+            display: block;
+        }
+        
+        /* Active User Header */
+        .user-mgmt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .empty-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            padding: 5rem 2rem;
+            text-align: center;
+        }
+        .empty-placeholder i {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--text-muted), rgba(255,255,255,0.05));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .actions-panel {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .actions-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+        @media (max-width: 600px) {
+            .actions-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Admin Quick Details list */
+        .user-quick-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+            background: rgba(0,0,0,0.2);
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(255,255,255,0.02);
+        }
+        
+        .user-quick-details div {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- HEADER -->
+        <header>
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <i class="fas fa-users-cog"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>PTM Admin</h1>
+                    <p>Super Administrator Control Deck</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <a href="/" class="btn btn-secondary" style="width: auto; padding: 0.5rem 1.2rem; font-size: 0.85rem; border-radius: 2rem; text-decoration: none;">
+                    <i class="fas fa-arrow-left"></i> Main Dashboard
+                </a>
+            </div>
+        </header>
+
+        <!-- SYSTEM STATISTICS -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon stat-blue">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="stat-total-users">0</span>
+                    <span class="stat-label">Total Users</span>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon stat-purple">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="stat-active-bots">0</span>
+                    <span class="stat-label">Active Bots</span>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon stat-green">
+                    <i class="fas fa-paper-plane"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="stat-total-replies">0</span>
+                    <span class="stat-label">Total Replies</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN LAYOUT -->
+        <div class="admin-grid">
+            
+            <!-- LEFT COLUMN -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                
+                <!-- REGISTERED USERS LIST -->
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fas fa-users"></i> Registered Website Accounts
+                    </div>
+                    
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">ID</th>
+                                    <th>Web User</th>
+                                    <th>IG Account</th>
+                                    <th>User Status</th>
+                                    <th>Bot Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                                        <i class="fas fa-spinner fa-spin"></i> Loading users...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SYSTEM TOOLS & DIAGNOSTICS CARD -->
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fas fa-tools"></i> System Tools & Diagnostics
+                    </div>
+                    
+                    <div class="user-quick-details" style="grid-template-columns: 1fr 1fr; margin-bottom: 1.5rem; background: rgba(0,0,0,0.15);">
+                        <div>
+                            <i class="fas fa-database" style="color: var(--color-secondary);"></i>
+                            <span>DB Size: <strong id="health-db-size">Loading...</strong></span>
+                        </div>
+                        <div>
+                            <i class="fas fa-project-diagram" style="color: #10b981;"></i>
+                            <span>Threads: <strong id="health-threads">0</strong></span>
+                        </div>
+                        <div>
+                            <i class="fab fa-python" style="color: #ffde57;"></i>
+                            <span>Python: <strong id="health-python">Loading...</strong></span>
+                        </div>
+                        <div>
+                            <i class="fas fa-server" style="color: #a78bfa;"></i>
+                            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">OS: <strong id="health-os" title="OS Info">Loading...</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- Broadcast Announcement -->
+                    <div style="border-top: 1px solid var(--border-color); padding-top: 1.25rem; margin-top: 1.25rem;">
+                        <h4 style="font-size:0.85rem; color:#fff; margin-bottom:0.75rem;"><i class="fab fa-telegram" style="color:#0088cc;"></i> Telegram Broadcast announcement</h4>
+                        <form id="broadcast-form">
+                            <div class="form-group">
+                                <textarea id="broadcast-message" style="min-height: 70px; font-size: 0.85rem; padding:0.5rem;" placeholder="Type broadcast message to all users..." required></textarea>
+                            </div>
+                            <button type="submit" id="btn-broadcast-submit" class="btn btn-secondary" style="width: auto; font-size: 0.8rem; padding: 0.45rem 1rem;">
+                                <i class="fas fa-paper-plane"></i> Broadcast Message
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Database Maintenance -->
+                    <div style="border-top: 1px solid var(--border-color); padding-top: 1.25rem; margin-top: 1.25rem;">
+                        <h4 style="font-size:0.85rem; color:#fff; margin-bottom:0.75rem;"><i class="fas fa-trash-alt" style="color:var(--color-danger);"></i> Log Maintenance</h4>
+                        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                            <select id="prune-days-select" style="padding: 0.45rem; font-size: 0.8rem; border-radius: 0.35rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: #fff;">
+                                <option value="7">Older than 7 Days</option>
+                                <option value="30" selected>Older than 30 Days</option>
+                                <option value="90">Older than 90 Days</option>
+                            </select>
+                            <button type="button" id="btn-prune-logs" class="btn btn-danger" style="width: auto; font-size: 0.85rem; padding: 0.45rem 0.9rem; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--color-danger); cursor: pointer;">
+                                <i class="fas fa-broom"></i> Prune Logs
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Activity Chart.js Canvas -->
+                    <div style="border-top: 1px solid var(--border-color); padding-top: 1.25rem; margin-top: 1.25rem;">
+                        <h4 style="font-size:0.85rem; color:#fff; margin-bottom:0.75rem;"><i class="fas fa-chart-line" style="color:var(--color-secondary);"></i> System Activity (Replies Sent)</h4>
+                        <div style="position:relative; height:160px; width:100%;">
+                            <canvas id="system-activity-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: SELECTED USER WORKSPACE -->
+            <div class="card" id="user-workspace-card">
+                <div class="empty-placeholder" id="no-user-selected-placeholder">
+                    <i class="fas fa-user-shield"></i>
+                    <h3>No User Selected</h3>
+                    <p>Select a user from the account table on the left to inspect logs, change settings, manage triggers, or connect/disconnect their Instagram account.</p>
+                </div>
+                
+                <div id="user-workspace-content" style="display: none;">
+                    
+                    <!-- Header -->
+                    <div class="user-mgmt-header">
+                        <div>
+                            <h2 style="font-size: 1.35rem; color:#fff;" id="selected-user-title">@webuser</h2>
+                            <p style="font-size: 0.8rem; color: var(--text-muted);">Web Account ID: <code id="selected-user-id">0</code></p>
+                        </div>
+                        <span class="badge" id="selected-user-bot-status-badge" style="background: rgba(255,255,255,0.05);">Unknown</span>
+                    </div>
+
+                    <!-- Quick Details -->
+                    <div class="user-quick-details">
+                        <div>
+                            <i class="fab fa-instagram" style="color: var(--color-secondary);"></i>
+                            <span>IG Account: <strong id="det-ig-username">None</strong></span>
+                        </div>
+                        <div>
+                            <i class="fab fa-telegram" style="color: #0088cc;"></i>
+                            <span>Telegram ID: <strong id="det-tg-id">None</strong></span>
+                        </div>
+                        <div>
+                            <i class="fas fa-history"></i>
+                            <span>IG Bot State: <strong id="det-bot-state">Idle</strong></span>
+                        </div>
+                        <div>
+                            <i class="fas fa-clock"></i>
+                            <span>Last Run: <strong id="det-last-run">Never</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions Panel -->
+                    <div class="actions-panel">
+                        <h4 style="font-size:0.85rem; text-transform:uppercase; color: var(--text-secondary); margin-bottom:0.75rem; letter-spacing:0.05em;">Quick Operations</h4>
+                        <div class="actions-row" style="grid-template-columns: repeat(4, 1fr);">
+                            <button type="button" id="btn-quick-toggle" class="btn btn-secondary" style="font-size:0.8rem; padding: 0.5rem 1rem;">
+                                <i class="fas fa-sync"></i> Toggle Bot
+                            </button>
+                            <button type="button" id="btn-quick-clear-history" class="btn btn-secondary" style="font-size:0.8rem; padding: 0.5rem 1rem;">
+                                <i class="fas fa-broom"></i> Clear Cooldowns
+                            </button>
+                            <button type="button" id="btn-quick-status" class="btn btn-secondary" style="font-size:0.8rem; padding: 0.5rem 1rem;">
+                                <i class="fas fa-user-slash"></i> Suspend User
+                            </button>
+                            <button type="button" id="btn-quick-disconnect" class="btn btn-danger" style="font-size:0.8rem; padding: 0.5rem 1rem;">
+                                <i class="fas fa-unlink"></i> Disconnect IG
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tabs Nav -->
+                    <div class="admin-tabs">
+                        <button type="button" class="admin-tab-btn active-tab" data-tab="settings">
+                            <i class="fas fa-cog"></i> Settings
+                        </button>
+                        <button type="button" class="admin-tab-btn" data-tab="triggers">
+                            <i class="fas fa-tags"></i> Triggers (<span id="tab-triggers-count">0</span>)
+                        </button>
+                        <button type="button" class="admin-tab-btn" data-tab="instagram">
+                            <i class="fab fa-instagram"></i> IG Login
+                        </button>
+                        <button type="button" class="admin-tab-btn" data-tab="logs">
+                            <i class="fas fa-history"></i> Log History
+                        </button>
+                    </div>
+
+                    <!-- Tab Contents -->
+                    <!-- 1. Settings Tab -->
+                    <div class="tab-content active-content" id="tab-settings">
+                        <form id="admin-settings-form">
+                            <div class="time-range">
+                                <div class="form-group">
+                                    <label for="admin_offline_start">Offline From</label>
+                                    <input type="time" id="admin_offline_start" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="admin_offline_end">Offline Until</label>
+                                    <input type="time" id="admin_offline_end" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="admin_timezone">Timezone</label>
+                                <select id="admin_timezone" required>
+                                    <option value="Asia/Dhaka">Asia/Dhaka (GMT+6)</option>
+                                    <option value="UTC">UTC (GMT+0)</option>
+                                    <option value="Asia/Kolkata">Asia/Kolkata (GMT+5:30)</option>
+                                    <option value="Asia/Singapore">Asia/Singapore (GMT+8)</option>
+                                    <option value="Europe/London">Europe/London (GMT+1)</option>
+                                    <option value="America/New_York">America/New_York (EST)</option>
+                                    <option value="America/Los_Angeles">America/Los_Angeles (PST)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="admin_check_interval">Check DMs Every</label>
+                                <select id="admin_check_interval" required>
+                                    <option value="10">10 Seconds (High Risk)</option>
+                                    <option value="30">30 Seconds</option>
+                                    <option value="60">1 Minute</option>
+                                    <option value="120">2 Minutes</option>
+                                    <option value="300">5 Minutes</option>
+                                    <option value="600">10 Minutes</option>
+                                    <option value="900">15 Minutes</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="admin_cooldown_hours">Reply Cooldown Per User</label>
+                                <select id="admin_cooldown_hours" required>
+                                    <option value="0">No Cooldown</option>
+                                    <option value="1">1 Hour</option>
+                                    <option value="4">4 Hours</option>
+                                    <option value="12">12 Hours (Recommended)</option>
+                                    <option value="24">24 Hours</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="admin_seen_control">Seen/Unseen Control (Incognito)</label>
+                                <select id="admin_seen_control" required>
+                                    <option value="seen">Seen (Mark read)</option>
+                                    <option value="unseen">Unseen (Keep unread)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="admin_proxy">Active Proxy URL</label>
+                                <input type="text" id="admin_proxy" placeholder="http://username:password@ip:port">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="admin_offline_message">Default Auto-Reply Message</label>
+                                <textarea id="admin_offline_message" placeholder="Type offline response..." required></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="margin-top: 1.5rem;">
+                                <i class="fas fa-save"></i> Save User Settings
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- 2. Triggers Tab -->
+                    <div class="tab-content" id="tab-triggers">
+                        <form id="admin-add-trigger-form" style="background:rgba(255,255,255,0.02); padding: 1rem; border-radius:0.75rem; border:1px solid var(--border-color); margin-bottom: 1.5rem;">
+                            <h4 style="font-size:0.85rem; color: #fff; margin-bottom: 0.75rem;">Add New Keyword Trigger</h4>
+                            <div class="form-group">
+                                <label for="admin-trigger-keyword">Keyword</label>
+                                <input type="text" id="admin-trigger-keyword" placeholder="e.g. price" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-trigger-reply">Response Message</label>
+                                <textarea id="admin-trigger-reply" style="min-height: 50px;" placeholder="Response text..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-secondary" style="width: auto; font-size: 0.8rem; padding: 0.4rem 0.8rem;">
+                                <i class="fas fa-plus"></i> Add Keyword Trigger
+                            </button>
+                        </form>
+
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Keyword</th>
+                                        <th>Custom Reply</th>
+                                        <th style="width: 50px;">Remove</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-triggers-table-body">
+                                    <tr>
+                                        <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                                            No triggers.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 3. Instagram Login Tab -->
+                    <div class="tab-content" id="tab-instagram">
+                        <!-- Instagram login method tabs -->
+                        <div class="login-tabs" style="margin-bottom: 1rem;">
+                            <button type="button" id="btn-admin-tab-credentials" class="login-tab-btn active-tab" style="flex-grow:1;">
+                                Credentials
+                            </button>
+                            <button type="button" id="btn-admin-tab-sessionid" class="login-tab-btn" style="flex-grow:1;">
+                                Session Token
+                            </button>
+                        </div>
+                        
+                        <div id="admin-login-2fa-banner" class="verification-needed">
+                            <p>
+                                <i class="fas fa-shield-alt"></i> <strong>2FA Required!</strong><br>
+                                Enter verification code sent to phone or authenticator app.
+                            </p>
+                        </div>
+
+                        <form id="admin-instagram-login-form">
+                            <div id="admin-ig-creds-fields">
+                                <div class="form-group">
+                                    <label for="admin-ig-username">Instagram Username</label>
+                                    <input type="text" id="admin-ig-username" placeholder="johndoe">
+                                </div>
+                                <div id="admin-ig-pw-group" class="form-group">
+                                    <label for="admin-ig-password">Password</label>
+                                    <input type="password" id="admin-ig-password" placeholder="••••••••">
+                                </div>
+                                <div id="admin-ig-2fa-group" class="form-group" style="display: none;">
+                                    <label for="admin-ig-2fa-code">2FA Code</label>
+                                    <input type="text" id="admin-ig-2fa-code" placeholder="123456">
+                                </div>
+                            </div>
+
+                            <div id="admin-ig-session-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="admin-ig-sessionid">Instagram Session Token (Session ID)</label>
+                                    <input type="text" id="admin-ig-sessionid" placeholder="Paste sessionid token here">
+                                </div>
+                            </div>
+
+                            <button type="submit" id="btn-admin-ig-login-submit" class="btn btn-primary" style="margin-top: 1rem;">
+                                Connect Account on Behalf
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- 4. Logs Tab -->
+                    <div class="tab-content" id="tab-logs">
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Sender</th>
+                                        <th>Automated Response</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-logs-table-body">
+                                    <tr>
+                                        <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                                            No actions logged.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <footer>
+        <p>PTM App &copy; 2026 Admin Panel. Use for troubleshooting purposes only.</p>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const statTotalUsers = document.getElementById('stat-total-users');
+        const statActiveBots = document.getElementById('stat-active-bots');
+        const statTotalReplies = document.getElementById('stat-total-replies');
+        
+        const usersTableBody = document.getElementById('users-table-body');
+        const noUserSelectedPlaceholder = document.getElementById('no-user-selected-placeholder');
+        const userWorkspaceContent = document.getElementById('user-workspace-content');
+        
+        const selectedUserTitle = document.getElementById('selected-user-title');
+        const selectedUserIdEl = document.getElementById('selected-user-id');
+        const selectedUserBotStatusBadge = document.getElementById('selected-user-bot-status-badge');
+        
+        const detIgUsername = document.getElementById('det-ig-username');
+        const detTgId = document.getElementById('det-tg-id');
+        const detBotState = document.getElementById('det-bot-state');
+        const detLastRun = document.getElementById('det-last-run');
+        
+        // Actions
+        const btnQuickToggle = document.getElementById('btn-quick-toggle');
+        const btnQuickClearHistory = document.getElementById('btn-quick-clear-history');
+        const btnQuickDisconnect = document.getElementById('btn-quick-disconnect');
+        const btnQuickStatus = document.getElementById('btn-quick-status');
+        
+        // System Diagnostics
+        const healthDbSize = document.getElementById('health-db-size');
+        const healthThreads = document.getElementById('health-threads');
+        const healthPython = document.getElementById('health-python');
+        const healthOs = document.getElementById('health-os');
+        
+        // Broadcast
+        const broadcastForm = document.getElementById('broadcast-form');
+        const broadcastMessage = document.getElementById('broadcast-message');
+        
+        // Prune
+        const pruneDaysSelect = document.getElementById('prune-days-select');
+        const btnPruneLogs = document.getElementById('btn-prune-logs');
+        
+        // Tab system
+        const tabButtons = document.querySelectorAll('.admin-tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const tabTriggersCount = document.getElementById('tab-triggers-count');
+        
+        // Settings form
+        const adminSettingsForm = document.getElementById('admin-settings-form');
+        const adminOfflineStart = document.getElementById('admin_offline_start');
+        const adminOfflineEnd = document.getElementById('admin_offline_end');
+        const adminTimezone = document.getElementById('admin_timezone');
+        const adminCheckInterval = document.getElementById('admin_check_interval');
+        const adminCooldownHours = document.getElementById('admin_cooldown_hours');
+        const adminSeenControl = document.getElementById('admin_seen_control');
+        const adminProxy = document.getElementById('admin_proxy');
+        const adminOfflineMessage = document.getElementById('admin_offline_message');
+        
+        // Triggers tab
+        const adminAddTriggerForm = document.getElementById('admin-add-trigger-form');
+        const adminTriggerKeyword = document.getElementById('admin-trigger-keyword');
+        const adminTriggerReply = document.getElementById('admin-trigger-reply');
+        const adminTriggersTableBody = document.getElementById('admin-triggers-table-body');
+        
+        // Instagram login tab
+        const adminInstagramLoginForm = document.getElementById('admin-instagram-login-form');
+        const btnAdminTabCredentials = document.getElementById('btn-admin-tab-credentials');
+        const btnAdminTabSessionid = document.getElementById('btn-admin-tab-sessionid');
+        const adminIgCredsFields = document.getElementById('admin-ig-creds-fields');
+        const adminIgSessionFields = document.getElementById('admin-ig-session-fields');
+        const adminIgUsername = document.getElementById('admin-ig-username');
+        const adminIgPassword = document.getElementById('admin-ig-password');
+        const adminIg2faGroup = document.getElementById('admin-ig-2fa-group');
+        const adminIg2faCode = document.getElementById('admin-ig-2fa-code');
+        const adminIgSessionid = document.getElementById('admin-ig-sessionid');
+        const adminLogin2faBanner = document.getElementById('admin-login-2fa-banner');
+        const btnAdminIgLoginSubmit = document.getElementById('btn-admin-ig-login-submit');
+        const adminIgPwGroup = document.getElementById('admin-ig-pw-group');
+
+        // Logs tab
+        const adminLogsTableBody = document.getElementById('admin-logs-table-body');
+
+        let selectedUserId = null;
+        let selectedUsername = null;
+        let loginMethod = 'credentials'; // 'credentials' or 'sessionid'
+        let selectedUserBotInfo = {};
+        let activityChart = null;
+
+        // Display Toast Notification
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Fetch System Stats
+        async function fetchSystemStats() {
+            try {
+                const res = await fetch('/api/admin/stats');
+                const data = await res.json();
+                if (data.success) {
+                    statTotalUsers.innerText = data.stats.total_users;
+                    statActiveBots.innerText = data.stats.active_bots;
+                    statTotalReplies.innerText = data.stats.total_replies;
+                    
+                    // Render/update Chart.js System Activity Chart
+                    renderActivityChart();
+                }
+            } catch (err) {
+                console.error("Error fetching stats:", err);
+            }
+        }
+
+        // Fetch Users Table
+        async function fetchUsers() {
+            try {
+                const res = await fetch('/api/admin/users');
+                const data = await res.json();
+                if (data.success) {
+                    usersTableBody.innerHTML = '';
+                    data.users.forEach(u => {
+                        const row = document.createElement('tr');
+                        row.style.cursor = 'pointer';
+                        
+                        let isRunning = u.bot_status === 'Running' || u.bot_status === 'Idle' || u.bot_status === 'Idle (Online Hours)';
+                        const statusBadge = isRunning 
+                            ? `<span class="badge" style="background: rgba(16,185,129,0.1); color: var(--color-success); border:1px solid rgba(16,185,129,0.2);">${u.bot_status}</span>`
+                            : `<span class="badge" style="background: rgba(239,68,68,0.1); color: var(--color-danger); border:1px solid rgba(239,68,68,0.2);">${u.bot_status}</span>`;
+                        
+                        const userStatusLabel = u.web_status === 0
+                            ? `<span class="badge" style="background: rgba(239,68,68,0.12); color: var(--color-danger); border: 1px solid rgba(239,68,68,0.25);"><i class="fas fa-user-slash"></i> Suspended</span>`
+                            : `<span class="badge" style="background: rgba(16,185,129,0.12); color: var(--color-success); border: 1px solid rgba(16,185,129,0.25);"><i class="fas fa-user-check"></i> Active</span>`;
+
+                        row.innerHTML = `
+                            <td><code>${u.id}</code></td>
+                            <td><strong>${u.username}</strong></td>
+                            <td>${u.insta_username ? `<span class="badge badge-username">@${u.insta_username}</span>` : '<span style="color:var(--text-muted); font-size:0.85rem;">None</span>'}</td>
+                            <td>${userStatusLabel}</td>
+                            <td>${statusBadge}</td>
+                        `;
+                        
+                        // Manage button callback
+                        row.addEventListener('click', () => {
+                            // Highlight selected row
+                            document.querySelectorAll('#users-table-body tr').forEach(r => r.style.background = 'none');
+                            row.style.background = 'rgba(138, 43, 226, 0.08)';
+                            selectUser(u.id, u.username);
+                        });
+                        
+                        usersTableBody.appendChild(row);
+                    });
+                }
+            } catch (err) {
+                console.error("Error loading users table:", err);
+            }
+        }
+
+        // Select User Workspace
+        async function selectUser(userId, username) {
+            selectedUserId = userId;
+            selectedUsername = username;
+            
+            noUserSelectedPlaceholder.style.display = 'none';
+            userWorkspaceContent.style.display = 'block';
+            
+            selectedUserTitle.innerText = `@${username}`;
+            selectedUserIdEl.innerText = userId;
+            
+            await loadWorkspaceData();
+        }
+
+        // Load all data for the workspace
+        async function loadWorkspaceData() {
+            if (!selectedUserId) return;
+            
+            try {
+                // 1. Fetch User Settings & Status
+                const res = await fetch(`/api/admin/users/${selectedUserId}/settings`);
+                const data = await res.json();
+                
+                if (data.success) {
+                    selectedUserBotInfo = data.bot;
+                    
+                    // Render details badge
+                    selectedUserBotStatusBadge.innerText = data.bot.status;
+                    selectedUserBotStatusBadge.className = 'badge';
+                    
+                    let isRunning = data.bot.status === 'Running' || data.bot.status === 'Idle' || data.bot.status === 'Idle (Online Hours)';
+                    if (isRunning) {
+                        selectedUserBotStatusBadge.style.background = 'rgba(16,185,129,0.1)';
+                        selectedUserBotStatusBadge.style.color = 'var(--color-success)';
+                        selectedUserBotStatusBadge.style.border = '1px solid rgba(16,185,129,0.2)';
+                    } else if (data.bot.status === 'Verification Required') {
+                        selectedUserBotStatusBadge.style.background = 'rgba(245,158,11,0.1)';
+                        selectedUserBotStatusBadge.style.color = 'var(--color-warning)';
+                        selectedUserBotStatusBadge.style.border = '1px solid rgba(245,158,11,0.2)';
+                    } else {
+                        selectedUserBotStatusBadge.style.background = 'rgba(239,68,68,0.1)';
+                        selectedUserBotStatusBadge.style.color = 'var(--color-danger)';
+                        selectedUserBotStatusBadge.style.border = '1px solid rgba(239,68,68,0.2)';
+                    }
+
+                    // Quick Details
+                    detIgUsername.innerText = data.settings.username ? `@${data.settings.username}` : 'None';
+                    detTgId.innerText = data.settings.telegram_chat_id || 'None';
+                    detBotState.innerText = data.bot.status;
+                    detLastRun.innerText = data.bot.last_run;
+
+                    // Load Form settings
+                    adminOfflineStart.value = data.settings.offline_start;
+                    adminOfflineEnd.value = data.settings.offline_end;
+                    adminTimezone.value = data.settings.timezone;
+                    adminCheckInterval.value = data.settings.check_interval;
+                    adminCooldownHours.value = data.settings.cooldown_hours;
+                    adminSeenControl.value = data.settings.seen_control || 'seen';
+                    adminProxy.value = data.settings.proxy;
+                    adminOfflineMessage.value = data.settings.offline_message;
+
+                    // Toggle quick action buttons
+                    btnQuickToggle.innerHTML = data.settings.bot_enabled 
+                        ? '<i class="fas fa-pause-circle"></i> Pause Bot' 
+                        : '<i class="fas fa-play-circle"></i> Start Bot';
+                    
+                    // Render suspend button state
+                    if (data.web_status === 0) {
+                        btnQuickStatus.innerHTML = '<i class="fas fa-user-check"></i> Reactivate User';
+                        btnQuickStatus.setAttribute('data-status', '0');
+                        btnQuickStatus.style.background = 'rgba(16,185,129,0.15)';
+                        btnQuickStatus.style.color = 'var(--color-success)';
+                        btnQuickStatus.style.border = '1px solid rgba(16,185,129,0.3)';
+                    } else {
+                        btnQuickStatus.innerHTML = '<i class="fas fa-user-slash"></i> Suspend User';
+                        btnQuickStatus.setAttribute('data-status', '1');
+                        btnQuickStatus.style.background = 'rgba(239,68,68,0.15)';
+                        btnQuickStatus.style.color = 'var(--color-danger)';
+                        btnQuickStatus.style.border = '1px solid rgba(239,68,68,0.3)';
+                    }
+                    
+                    // Render Instagram tab login state (2FA)
+                    if (data.bot.needs_2fa) {
+                        adminIg2faGroup.style.display = 'block';
+                        adminIg2faCode.required = true;
+                        adminIgPwGroup.style.display = 'none';
+                        adminIgPassword.required = false;
+                        adminLogin2faBanner.style.display = 'block';
+                        btnAdminIgLoginSubmit.innerText = 'Verify 2FA Code';
+                    } else {
+                        if (loginMethod === 'credentials') {
+                            adminIg2faGroup.style.display = 'none';
+                            adminIg2faCode.required = false;
+                            adminIgPwGroup.style.display = 'block';
+                            adminIgPassword.required = true;
+                            adminLogin2faBanner.style.display = 'none';
+                            btnAdminIgLoginSubmit.innerText = 'Connect Account';
+                        }
+                    }
+                }
+                
+                // 2. Fetch Triggers
+                await fetchWorkspaceTriggers();
+                
+                // 3. Fetch Logs
+                await fetchWorkspaceLogs();
+                
+            } catch (err) {
+                console.error("Error loading workspace details:", err);
+                showToast("Failed to load user settings.", "error");
+            }
+        }
+
+        // Fetch Triggers inside workspace
+        async function fetchWorkspaceTriggers() {
+            try {
+                const res = await fetch(`/api/admin/users/${selectedUserId}/triggers`);
+                const data = await res.json();
+                if (data.success) {
+                    tabTriggersCount.innerText = data.triggers.length;
+                    adminTriggersTableBody.innerHTML = '';
+                    if (data.triggers.length === 0) {
+                        adminTriggersTableBody.innerHTML = `
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                                    No custom triggers configured for this account.
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    data.triggers.forEach(trig => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td style="font-weight:600; color:var(--color-secondary);"><code>${trig.keyword}</code></td>
+                            <td style="color:var(--text-secondary); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${trig.reply_message}">${trig.reply_message}</td>
+                            <td style="text-align:center;">
+                                <button type="button" class="btn-delete-trigger" data-id="${trig.id}" style="background:rgba(239, 68, 68, 0.15); color:var(--color-danger); border:1px solid rgba(239, 68, 68, 0.3); border-radius:0.25rem; padding:0.3rem 0.6rem; font-size:0.75rem; cursor:pointer;">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        `;
+                        
+                        row.querySelector('.btn-delete-trigger').addEventListener('click', async () => {
+                            if (confirm("Delete this trigger for user?")) {
+                                try {
+                                    const delRes = await fetch(`/api/admin/users/${selectedUserId}/triggers/delete`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ id: trig.id })
+                                    });
+                                    const delData = await delRes.json();
+                                    if (delData.success) {
+                                        showToast("Trigger deleted.", "success");
+                                        await fetchWorkspaceTriggers();
+                                    }
+                                } catch (err) {
+                                    showToast("Failed to delete trigger.", "error");
+                                }
+                            }
+                        });
+                        
+                        adminTriggersTableBody.appendChild(row);
+                    });
+                }
+            } catch (err) {
+                console.error("Error loading triggers:", err);
+            }
+        }
+
+        // Fetch Logs inside workspace
+        async function fetchWorkspaceLogs() {
+            try {
+                const res = await fetch(`/api/admin/users/${selectedUserId}/logs`);
+                const data = await res.json();
+                if (data.success) {
+                    adminLogsTableBody.innerHTML = '';
+                    if (data.logs.length === 0) {
+                        adminLogsTableBody.innerHTML = `
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                                    No reply history logged for this account.
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    data.logs.forEach(log => {
+                        const row = document.createElement('tr');
+                        const localTime = new Date(log.timestamp).toLocaleTimeString();
+                        const localDate = new Date(log.timestamp).toLocaleDateString();
+                        row.innerHTML = `
+                            <td><strong>${localTime}</strong><br><span style="font-size:0.75rem; color:var(--text-muted);">${localDate}</span></td>
+                            <td><span class="badge badge-username">@${log.username}</span></td>
+                            <td style="color:var(--text-secondary); max-width: 200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${log.message}">${log.message}</td>
+                        `;
+                        adminLogsTableBody.appendChild(row);
+                    });
+                }
+            } catch (err) {
+                console.error("Error loading user logs:", err);
+            }
+        }
+
+        // Tab Switching Click
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabButtons.forEach(b => b.classList.remove('active-tab'));
+                btn.classList.add('active-tab');
+                
+                const tabId = `tab-${btn.getAttribute('data-tab')}`;
+                tabContents.forEach(content => {
+                    if (content.id === tabId) {
+                        content.classList.add('active-content');
+                    } else {
+                        content.classList.remove('active-content');
+                    }
+                });
+            });
+        });
+
+        // Toggle Quick Button (bot enabled status)
+        btnQuickToggle.addEventListener('click', async () => {
+            if (!selectedUserId) return;
+            try {
+                const res = await fetch(`/api/admin/users/${selectedUserId}/toggle`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, "success");
+                    await loadWorkspaceData();
+                    await fetchUsers();
+                    await fetchSystemStats();
+                }
+            } catch (err) {
+                showToast("Failed to toggle bot.", "error");
+            }
+        });
+
+        // Quick Clear Cooldown history
+        btnQuickClearHistory.addEventListener('click', async () => {
+            if (!selectedUserId) return;
+            try {
+                const res = await fetch(`/api/admin/users/${selectedUserId}/clear_history`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, "success");
+                }
+            } catch (err) {
+                showToast("Failed to clear cooldown history.", "error");
+            }
+        });
+
+        // Quick disconnect Instagram
+        btnQuickDisconnect.addEventListener('click', async () => {
+            if (!selectedUserId) return;
+            if (confirm("Are you sure you want to log out/disconnect Instagram for this user?")) {
+                try {
+                    const res = await fetch(`/api/admin/users/${selectedUserId}/disconnect`, { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast(data.message, "info");
+                        await loadWorkspaceData();
+                        await fetchUsers();
+                    }
+                } catch (err) {
+                    showToast("Failed to disconnect Instagram.", "error");
+                }
+            }
+        });
+
+        // Save settings form
+        adminSettingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!selectedUserId) return;
+            try {
+                const res = await fetch(`/api/admin/users/${selectedUserId}/settings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        offline_start: adminOfflineStart.value,
+                        offline_end: adminOfflineEnd.value,
+                        timezone: adminTimezone.value,
+                        check_interval: parseInt(adminCheckInterval.value),
+                        cooldown_hours: parseInt(adminCooldownHours.value),
+                        seen_control: adminSeenControl.value,
+                        proxy: adminProxy.value.trim(),
+                        offline_message: adminOfflineMessage.value
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast("User settings saved successfully!", "success");
+                    await loadWorkspaceData();
+                    await fetchUsers();
+                }
+            } catch (err) {
+                showToast("Failed to save settings.", "error");
+            }
+        });
+
+        // Add Keyword Trigger Form
+        adminAddTriggerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!selectedUserId) return;
+            try {
+                const res = await fetch(`/api/admin/users/${selectedUserId}/triggers/add`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        keyword: adminTriggerKeyword.value.trim(),
+                        reply_message: adminTriggerReply.value.trim()
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast("Keyword trigger added successfully!", "success");
+                    adminTriggerKeyword.value = '';
+                    adminTriggerReply.value = '';
+                    await fetchWorkspaceTriggers();
+                }
+            } catch (err) {
+                showToast("Failed to add trigger.", "error");
+            }
+        });
+
+        // Instagram Login Method Tabs
+        btnAdminTabCredentials.addEventListener('click', () => {
+            loginMethod = 'credentials';
+            btnAdminTabCredentials.classList.add('active-tab');
+            btnAdminTabSessionid.classList.remove('active-tab');
+            adminIgCredsFields.style.display = 'block';
+            adminIgSessionFields.style.display = 'none';
+            adminIgUsername.required = true;
+            adminIgPassword.required = true;
+            adminIgSessionid.required = false;
+            btnAdminIgLoginSubmit.innerText = selectedUserBotInfo.needs_2fa ? 'Verify 2FA Code' : 'Connect Account';
+        });
+
+        btnAdminTabSessionid.addEventListener('click', () => {
+            loginMethod = 'sessionid';
+            btnAdminTabSessionid.classList.add('active-tab');
+            btnAdminTabCredentials.classList.remove('active-tab');
+            adminIgCredsFields.style.display = 'none';
+            adminIgSessionFields.style.display = 'block';
+            adminIgUsername.required = false;
+            adminIgPassword.required = false;
+            adminIgSessionid.required = true;
+            btnAdminIgLoginSubmit.innerText = 'Connect via Session Token';
+        });
+
+        // Instagram Login Form Submit
+        adminInstagramLoginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!selectedUserId) return;
+            
+            btnAdminIgLoginSubmit.disabled = true;
+            btnAdminIgLoginSubmit.innerText = 'Connecting...';
+            
+            try {
+                // If they have proxy settings in settings, ensure those are saved first
+                if (adminProxy.value.trim()) {
+                    await fetch(`/api/admin/users/${selectedUserId}/settings`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ proxy: adminProxy.value.trim() })
+                    });
+                }
+
+                const loginPayload = {};
+                if (loginMethod === 'sessionid') {
+                    loginPayload.session_id = adminIgSessionid.value.trim();
+                } else {
+                    loginPayload.username = adminIgUsername.value.trim();
+                    loginPayload.password = adminIgPassword.value;
+                    if (adminIg2faCode.value.trim()) {
+                        loginPayload.verification_code = adminIg2faCode.value.trim();
+                    }
+                }
+
+                const res = await fetch(`/api/admin/users/${selectedUserId}/login_instagram`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(loginPayload)
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showToast("Instagram connected successfully!", "success");
+                    adminIgUsername.value = '';
+                    adminIgPassword.value = '';
+                    adminIg2faCode.value = '';
+                    adminIgSessionid.value = '';
+                    btnAdminTabCredentials.click();
+                    await loadWorkspaceData();
+                    await fetchUsers();
+                } else {
+                    if (data.needs_2fa) {
+                        showToast("2FA Code Required!", "info");
+                    } else {
+                        showToast(data.message, "error");
+                    }
+                    await loadWorkspaceData();
+                }
+            } catch (err) {
+                showToast("Request failed. Check server connection.", "error");
+            } finally {
+                btnAdminIgLoginSubmit.disabled = false;
+                btnAdminIgLoginSubmit.innerText = selectedUserBotInfo.needs_2fa ? 'Verify 2FA Code' : (loginMethod === 'credentials' ? 'Connect Account' : 'Connect via Session Token');
+            }
+        });
+
+        // Suspend/Reactivate user toggle button click
+        btnQuickStatus.addEventListener('click', async () => {
+            if (!selectedUserId) return;
+            const currentStatus = btnQuickStatus.getAttribute('data-status'); // '0' for suspended, '1' for active
+            const newStatus = currentStatus === '0' ? 1 : 0;
+            const actionName = newStatus === 0 ? "suspend" : "reactivate";
+            
+            if (confirm(`Are you sure you want to ${actionName} this user account?`)) {
+                try {
+                    const res = await fetch(`/api/admin/users/${selectedUserId}/status`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: newStatus })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast(data.message, "success");
+                        await loadWorkspaceData();
+                        await fetchUsers();
+                        await fetchSystemStats();
+                    } else {
+                        showToast(data.message, "error");
+                    }
+                } catch (err) {
+                    showToast("Failed to change user status.", "error");
+                }
+            }
+        });
+
+        // Fetch and render System Health diagnostics
+        async function fetchSystemHealth() {
+            try {
+                const res = await fetch('/api/admin/system_health');
+                const data = await res.json();
+                if (data.success) {
+                    healthDbSize.innerText = data.db_size;
+                    healthThreads.innerText = data.active_threads;
+                    healthPython.innerText = data.python_version;
+                    healthOs.innerText = data.os;
+                    healthOs.setAttribute('title', data.os);
+                }
+            } catch (err) {
+                console.error("Error fetching system health:", err);
+            }
+        }
+
+        // Submit Broadcast announcement Form
+        broadcastForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = broadcastMessage.value.trim();
+            if (!message) return;
+            
+            if (confirm("Are you sure you want to send this announcement to ALL linked Telegram chats?")) {
+                try {
+                    const res = await fetch('/api/admin/broadcast', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: message })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast(data.message, "success");
+                        broadcastMessage.value = '';
+                    } else {
+                        showToast(data.message, "error");
+                    }
+                } catch (err) {
+                    showToast("Failed to send broadcast.", "error");
+                }
+            }
+        });
+
+        // Prune logs button click
+        btnPruneLogs.addEventListener('click', async () => {
+            const days = parseInt(pruneDaysSelect.value);
+            if (confirm(`Are you sure you want to permanently delete all logs older than ${days} days?`)) {
+                try {
+                    const res = await fetch('/api/admin/maintenance/clean_logs', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ days: days })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast(data.message, "success");
+                        await fetchSystemStats();
+                        await fetchSystemHealth();
+                    } else {
+                        showToast(data.message, "error");
+                    }
+                } catch (err) {
+                    showToast("Failed to prune logs.", "error");
+                }
+            }
+        });
+
+        // Render System Activity Line Chart using Chart.js
+        function renderActivityChart() {
+            const ctx = document.getElementById('system-activity-chart').getContext('2d');
+            
+            // Get past 7 days labels
+            const labels = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                labels.push(d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+            }
+            
+            // Mock dynamic data based on total replies
+            const totalReplies = parseInt(statTotalReplies.innerText) || 0;
+            const baseValue = Math.max(2, Math.floor(totalReplies / 7));
+            const dataPoints = labels.map((_, idx) => {
+                if (idx === labels.length - 1) return totalReplies - (baseValue * 6);
+                return baseValue + Math.floor(Math.sin(idx) * (baseValue / 2));
+            }).map(v => Math.max(0, v));
+            
+            if (activityChart) {
+                activityChart.destroy();
+            }
+            
+            activityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Auto-Replies Sent',
+                        data: dataPoints,
+                        borderColor: '#a78bfa',
+                        backgroundColor: 'rgba(167, 139, 250, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: 'rgba(255, 255, 255, 0.5)', font: { size: 10 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: 'rgba(255, 255, 255, 0.5)', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialization
+        fetchSystemStats();
+        fetchUsers();
+        fetchSystemHealth();
+        
+        // Auto-refresh tables and stats
+        setInterval(fetchSystemStats, 5000);
+        setInterval(fetchUsers, 6000);
+        setInterval(fetchSystemHealth, 10000);
+        setInterval(() => {
+            if (selectedUserId) {
+                // Only auto-fetch logs and details (no form values to avoid losing focus/state)
+                fetchWorkspaceLogs();
+                // Fetch status and last run
+                fetch(`/api/admin/users/${selectedUserId}/settings`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            detBotState.innerText = data.bot.status;
+                            detLastRun.innerText = data.bot.last_run;
+                            selectedUserBotStatusBadge.innerText = data.bot.status;
+                            let isRunning = data.bot.status === 'Running' || data.bot.status === 'Idle' || data.bot.status === 'Idle (Online Hours)';
+                            if (isRunning) {
+                                selectedUserBotStatusBadge.style.background = 'rgba(16,185,129,0.1)';
+                                selectedUserBotStatusBadge.style.color = 'var(--color-success)';
+                            } else {
+                                selectedUserBotStatusBadge.style.background = 'rgba(239,68,68,0.1)';
+                                selectedUserBotStatusBadge.style.color = 'var(--color-danger)';
+                            }
+                        }
+                    }).catch(err => console.error(err));
+            }
+        }, 8000);
+    </script>
+</body>
+</html>

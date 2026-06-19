@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Database
+database.db
+database.db-journal
+
+# Local virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# Sensitive credentials & keys
+.key
+.session_key
+.telegram_token
+
+# Local backup ZIPs
+*.zip
+
+# Local IDE configuration files
+.idea/
+.vscode/
+
+# Android build outputs and intermediate files
+instaoff-android/.gradle/
+instaoff-android/local.properties
+instaoff-android/app/build/
+instaoff-android/build/
+*.apk
